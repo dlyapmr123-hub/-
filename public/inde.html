@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SportPredict.AI — прогнозы на спорт от нейросети</title>
+    
+    <!-- Шрифты и иконки -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* ========== СБРОС И ПЕРЕМЕННЫЕ ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-darker: #050508;
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --bg-card-hover: rgba(255, 255, 255, 0.05);
+            --bg-card-active: rgba(255, 255, 255, 0.03);
+            --border-light: rgba(255, 255, 255, 0.05);
+            --border-medium: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(102, 126, 234, 0.3);
+            --primary: #667eea;
+            --primary-light: #8a9ef0;
+            --primary-dark: #4c5fab;
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --primary-gradient-soft: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+            --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --success-gradient-soft: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%);
+            --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #6b6b6b;
+            --text-glow: rgba(102, 126, 234, 0.5);
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ========== ФОНОВЫЕ ЭЛЕМЕНТЫ ========== */
+        .gradient-orb {
+            position: fixed;
+            width: 800px;
+            height: 800px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
+            top: -300px;
+            left: -300px;
+            z-index: -1;
+            filter: blur(80px);
+            animation: orbFloat 25s ease-in-out infinite;
+        }
+
+        .gradient-orb.secondary {
+            background: radial-gradient(circle at 70% 70%, rgba(118, 75, 162, 0.15) 0%, transparent 70%);
+            bottom: -300px;
+            right: -300px;
+            top: auto;
+            left: auto;
+            animation: orbFloat 30s ease-in-out infinite reverse;
+        }
+
+        .gradient-orb.tertiary {
+            background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1000px;
+            height: 1000px;
+            filter: blur(100px);
+            opacity: 0.3;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(150px, 150px) scale(1.1); }
+        }
+
+        /* ========== НАВИГАЦИЯ ========== */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            background: rgba(5, 5, 8, 0.7);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .nav-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 0.75rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-icon {
+            font-size: 2.2rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px var(--text-glow));
+        }
+
+        .logo span {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .sport-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.7rem 1.3rem;
+            border: none;
+            border-radius: 40px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .sport-btn i {
+            font-size: 1rem;
+        }
+
+        .sport-btn:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-color: var(--border-light);
+            transform: translateY(-2px);
+        }
+
+        .sport-btn.active {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .ai-badge {
+            background: var(--primary-gradient-soft);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .ai-badge i {
+            color: var(--primary-light);
+            font-size: 1rem;
+        }
+
+        .update-time {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .update-time i {
+            color: var(--primary);
+        }
+
+        /* ========== КОНТЕЙНЕР ========== */
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* ========== HERO СЕКЦИЯ ========== */
+        .hero {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: var(--primary-gradient-soft);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 32px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+            animation: rotate 30s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff 0%, #e0e0ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .hero-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hero-stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-light);
+        }
+
+        .hero-stat-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .hero-ai {
+            position: relative;
+            z-index: 1;
+            text-align: right;
+        }
+
+        .hero-ai-icon {
+            font-size: 4rem;
+            color: var(--primary);
+            filter: drop-shadow(0 0 20px var(--text-glow));
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-ai-text {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .hero-ai-badge {
+            background: var(--success-gradient-soft);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 0.3rem 0.8rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-top: 0.5rem;
+        }
+
+        /* ========== СТАТИСТИКА ========== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 24px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-header i {
+            font-size: 2rem;
+            color: var(--primary);
+            opacity: 0.8;
+        }
+
+        .stat-trend {
+            font-size: 0.8rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            background: var(--success-gradient-soft);
+            color: var(--success);
+        }
+
+        .stat-trend.down {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #a0a0ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .stat-progress {
+            margin-top: 1rem;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .stat-progress-fill {
+            height: 100%;
+            background: var(--primary-gradient);
+            border-radius: 2px;
+            width: 0%;
+        }
+
+        /* ========== СЕКЦИЯ ЖЕЛЕЗНЫХ ПРОГНОЗОВ ========== */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .section-header h2 i {
+            color: var(--primary);
+            background: var(--primary-gradient-soft);
+            padding: 0.5rem;
+            border-radius: 12px;
+        }
+
+        .section-badge {
+            background: var(--success-gradient-soft);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .iron-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .iron-card {
+            background: var(--success-gradient-soft);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 24px;
+            padding: 1.8rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .iron-card::before {
+            content: '🔒';
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 2rem;
+            opacity: 0.2;
+            transform: rotate(15deg);
+        }
+
+        .iron-card:hover {
+            border-color: rgba(16, 185, 129, 0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2);
+        }
+
+        .iron-badge {
+            display: inline-block;
+            background: var(--success);
+            color: white;
+            padding: 0.2rem 0.8rem;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+        }
+
+        .iron-teams {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .iron-league {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .iron-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 1rem 0;
+        }
+
+        .iron-prediction {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .iron-probability {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .iron-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            border-left: 3px solid var(--success);
+        }
+
+        .iron-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* ========== ОСНОВНЫЕ ПРОГНОЗЫ ========== */
+        .predictions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .prediction-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 24px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prediction-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .prediction-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.15);
+        }
+
+        .prediction-card:hover::after {
+            transform: translateX(0);
+        }
+
+        .prediction-card.iron {
+            background: var(--success-gradient-soft);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .prediction-card.iron::after {
+            background: var(--success-gradient);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .sport-badge {
+            background: var(--primary-gradient-soft);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            padding: 0.3rem 0.8rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .match-time {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .teams {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .league {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .prediction-block {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .winner {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .probability {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .prediction-card.iron .probability {
+            color: var(--success);
+        }
+
+        .confidence-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: var(--primary-gradient);
+            border-radius: 2px;
+        }
+
+        .prediction-card.iron .confidence-fill {
+            background: var(--success-gradient);
+        }
+
+        .description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 1rem 0;
+            padding: 0.8rem;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            border-left: 2px solid var(--primary);
+        }
+
+        .prediction-card.iron .description {
+            border-left-color: var(--success);
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-light);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .factors {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .factor {
+            background: rgba(102, 126, 234, 0.2);
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+        }
+
+        .result-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .result-badge.win {
+            background: var(--success);
+            color: white;
+        }
+
+        .result-badge.loss {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* ========== ОСНОВНАЯ СЕТКА ========== */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        /* ========== НОВОСТИ ========== */
+        .news-sidebar {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 32px;
+            padding: 1.8rem;
+            position: sticky;
+            top: 100px;
+            backdrop-filter: blur(10px);
+        }
+
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .news-header h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .news-header h3 i {
+            color: var(--primary);
+        }
+
+        .live-indicator {
+            background: var(--danger);
+            padding: 0.2rem 0.8rem;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            animation: pulse 2s infinite;
+        }
+
+        .news-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .news-tab {
+            flex: 1;
+            padding: 0.6rem;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .news-tab:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+            border-color: var(--border-light);
+        }
+
+        .news-tab.active {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .news-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .news-feed::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .news-feed::-webkit-scrollbar-track {
+            background: var(--bg-card);
+        }
+
+        .news-feed::-webkit-scrollbar-thumb {
+            background: var(--border-light);
+            border-radius: 4px;
+        }
+
+        .news-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .news-item:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-light);
+            transform: translateX(4px);
+        }
+
+        .news-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-gradient-soft);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        .news-content {
+            flex: 1;
+        }
+
+        .news-title {
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .news-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .news-source {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        /* ========== ПОДВАЛ ========== */
+        .footer {
+            margin-top: 5rem;
+            border-top: 1px solid var(--border-light);
+            backdrop-filter: blur(20px);
+            background: rgba(5, 5, 8, 0.7);
+        }
+
+        .footer-content {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 2fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-about {
+            max-width: 300px;
+        }
+
+        .footer-logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .footer-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .social-link {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            background: var(--primary-gradient);
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        .footer-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        .newsletter {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .newsletter-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .newsletter-text {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .newsletter-form {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .newsletter-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 0.8rem 1rem;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .newsletter-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .newsletter-button {
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 12px;
+            padding: 0.8rem 1.2rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .newsletter-button:hover {
+            transform: scale(1.05);
+        }
+
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-light);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .footer-bottom-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-bottom-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        /* ========== АДАПТИВНОСТЬ ========== */
+        @media (max-width: 1200px) {
+            .predictions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .footer-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .news-sidebar {
+                position: static;
+            }
+            
+            .iron-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+            
+            .hero-ai {
+                text-align: center;
+            }
+            
+            .hero-stats {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .predictions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-bottom {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+
+        /* ========== АНИМАЦИИ ========== */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .prediction-card,
+        .iron-card,
+        .news-item,
+        .stat-card {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .loading i {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- Фоновые элементы -->
+    <div class="gradient-orb"></div>
+    <div class="gradient-orb secondary"></div>
+    <div class="gradient-orb tertiary"></div>
+    
+    <!-- Навигация -->
+    <nav class="nav">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                Sport<span>Predict.AI</span>
+            </div>
+            
+            <div class="nav-links">
+                <button class="sport-btn active" data-sport="all">
+                    <i class="fas fa-star"></i>
+                    Все
+                </button>
+                <button class="sport-btn" data-sport="football">
+                    <i class="fas fa-futbol"></i>
+                    Футбол
+                </button>
+                <button class="sport-btn" data-sport="hockey">
+                    <i class="fas fa-hockey-puck"></i>
+                    Хоккей
+                </button>
+                <button class="sport-btn" data-sport="csgo">
+                    <i class="fas fa-gamepad"></i>
+                    CS:GO
+                </button>
+            </div>
+            
+            <div class="nav-right">
+                <div class="ai-badge">
+                    <i class="fas fa-robot"></i>
+                    GigaChat AI Online
+                </div>
+                <div class="update-time">
+                    <i class="far fa-clock"></i>
+                    <span id="updateTime">Обновление...</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- Hero секция -->
+        <div class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">Прогнозы от нейросети GigaChat</h1>
+                <p class="hero-subtitle">Искусственный интеллект анализирует тысячи матчей и выбирает только лучшие прогнозы с высокой вероятностью прохода</p>
+                
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <span class="hero-stat-value" id="heroTotal">0</span>
+                        <span class="hero-stat-label">всего прогнозов</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-value" id="heroAccuracy">0%</span>
+                        <span class="hero-stat-label">точность</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-value" id="heroIron">0</span>
+                        <span class="hero-stat-label">железных</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hero-ai">
+                <div class="hero-ai-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <div class="hero-ai-text">Анализ матчей в реальном времени</div>
+                <div class="hero-ai-badge">
+                    <i class="fas fa-bolt"></i> <span id="analyzedMatches">10 342</span> матча проанализировано
+                </div>
+            </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="fas fa-calendar-day"></i>
+                    <span class="stat-trend" id="todayTrend">+0%</span>
+                </div>
+                <div class="stat-value" id="todayPredictions">0</div>
+                <div class="stat-label">Прогнозов на сегодня</div>
+                <div class="stat-progress">
+                    <div class="stat-progress-fill" id="todayProgress" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="stat-trend" id="accuracyTrend">+0%</span>
+                </div>
+                <div class="stat-value" id="accuracyRate">0<span class="stat-percent">%</span></div>
+                <div class="stat-label">Точность прогнозов</div>
+                <div class="stat-progress">
+                    <div class="stat-progress-fill" id="accuracyProgress" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="fas fa-trophy"></i>
+                    <span class="stat-trend" id="wonTrend">+0</span>
+                </div>
+                <div class="stat-value" id="wonPredictions">0</div>
+                <div class="stat-label">Успешных прогнозов</div>
+                <div class="stat-progress">
+                    <div class="stat-progress-fill" id="wonProgress" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="fas fa-coins"></i>
+                    <span class="stat-trend profit" id="profitTrend">+0%</span>
+                </div>
+                <div class="stat-value" id="profit">0<span class="stat-percent">%</span></div>
+                <div class="stat-label">Профит</div>
+                <div class="stat-progress">
+                    <div class="stat-progress-fill" id="profitProgress" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Железные прогнозы (90%+) -->
+        <section class="iron-section">
+            <div class="section-header">
+                <h2>
+                    <i class="fas fa-shield-alt"></i>
+                    Железные прогнозы
+                </h2>
+                <div class="section-badge">
+                    <i class="fas fa-bolt"></i>
+                    Вероятность 90%+
+                </div>
+            </div>
+            
+            <div class="iron-grid" id="ironPredictions">
+                <!-- Железные прогнозы загружаются через JS -->
+                <div class="iron-card" style="grid-column: 1/-1; text-align: center;">
+                    <i class="fas fa-robot" style="font-size: 2rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                    <h3>Загрузка прогнозов...</h3>
+                    <p style="color: var(--text-secondary);">Нейросеть анализирует матчи</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Основная сетка контента -->
+        <div class="main-grid">
+            <!-- Левая колонка - все прогнозы -->
+            <div class="predictions-section">
+                <div class="section-header">
+                    <h2>
+                        <i class="fas fa-microchip"></i>
+                        Все прогнозы на сегодня
+                    </h2>
+                    <span class="section-badge" id="predictionsCount">0 прогнозов</span>
+                </div>
+                
+                <div class="predictions-grid" id="predictionsGrid">
+                    <!-- Прогнозы загружаются через JS -->
+                    <div class="prediction-card" style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                        <i class="fas fa-robot ai-thinking" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                        <h3>Загрузка прогнозов...</h3>
+                        <p style="color: var(--text-secondary);">Нейросеть анализирует матчи</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Правая колонка - новости и виджеты -->
+            <div class="news-sidebar">
+                <div class="news-header">
+                    <h3>
+                        <i class="fas fa-newspaper"></i>
+                        Новости спорта
+                    </h3>
+                    <span class="live-indicator">
+                        <i class="fas fa-circle"></i> LIVE
+                    </span>
+                </div>
+                
+                <div class="news-tabs">
+                    <button class="news-tab active" data-news="all">Все</button>
+                    <button class="news-tab" data-news="football">Футбол</button>
+                    <button class="news-tab" data-news="hockey">Хоккей</button>
+                    <button class="news-tab" data-news="csgo">CS:GO</button>
+                </div>
+                
+                <div class="news-feed" id="newsFeed">
+                    <!-- Новости загружаются через JS -->
+                    <div class="loading" style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Загрузка новостей...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Подвал -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <div class="footer-logo">
+                        <span class="logo-icon">⚡</span>
+                        SportPredict.AI
+                    </div>
+                    <p class="footer-description">
+                        Нейросетевые прогнозы на спорт с использованием GigaChat. 
+                        Анализируем тысячи матчей ежедневно, чтобы найти лучшие ставки.
+                    </p>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-discord"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-nav">
+                    <h4 class="footer-title">Навигация</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Главная</a></li>
+                        <li><a href="#">Прогнозы</a></li>
+                        <li><a href="#">Статистика</a></li>
+                        <li><a href="#">Как это работает</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-support">
+                    <h4 class="footer-title">Поддержка</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">О проекте</a></li>
+                        <li><a href="#">Контакты</a></li>
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Политика конфиденциальности</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-newsletter">
+                    <div class="newsletter">
+                        <h4 class="newsletter-title">Получайте прогнозы первыми</h4>
+                        <p class="newsletter-text">Подпишитесь на рассылку и получайте железные прогнозы моментально</p>
+                        <form class="newsletter-form" id="newsletterForm">
+                            <input type="email" class="newsletter-input" placeholder="Ваш email" required>
+                            <button type="submit" class="newsletter-button">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <div class="footer-copyright">
+                    © 2024 SportPredict.AI — прогнозы на спорт от нейросети GigaChat
+                </div>
+                <div class="footer-bottom-links">
+                    <a href="#">Условия использования</a>
+                    <a href="#">Конфиденциальность</a>
+                    <a href="#">Реклама</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"></script>
+    
+    <!-- Конфиг Firebase (отдельный файл) -->
+    <script src="config/firebase-config.js"></script>
+    
+    <script>
+        // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+        let appState = {
+            totalPredictions: 0,
+            wonPredictions: 0,
+            lostPredictions: 0,
+            ironPredictions: 0,
+            accuracy: 0,
+            profit: 0,
+            predictions: [],
+            news: []
+        };
+
+        let currentSportFilter = 'all';
+        let currentNewsFilter = 'all';
+
+        // ========== ФУНКЦИИ ДЛЯ РАБОТЫ С FIREBASE ==========
+        
+        async function loadPredictionsFromFirebase() {
+            try {
+                const snapshot = await db.collection('predictions')
+                    .where('date', '==', 'Сегодня')
+                    .orderBy('probability', 'desc')
+                    .get();
+                
+                if (snapshot.empty) {
+                    console.log('Нет прогнозов в Firebase');
+                    return [];
+                }
+                
+                const predictions = [];
+                snapshot.forEach(doc => {
+                    predictions.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                return predictions;
+                
+            } catch (error) {
+                console.error('Ошибка загрузки прогнозов:', error);
+                return [];
+            }
+        }
+
+        async function loadNewsFromFirebase() {
+            try {
+                const snapshot = await db.collection('news')
+                    .orderBy('timestamp', 'desc')
+                    .limit(20)
+                    .get();
+                
+                if (snapshot.empty) {
+                    console.log('Нет новостей в Firebase');
+                    return [];
+                }
+                
+                const news = [];
+                snapshot.forEach(doc => {
+                    news.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                return news;
+                
+            } catch (error) {
+                console.error('Ошибка загрузки новостей:', error);
+                return [];
+            }
+        }
+
+        async function loadStatsFromFirebase() {
+            try {
+                const statsDoc = await db.collection('statistics').doc('overall').get();
+                
+                if (statsDoc.exists) {
+                    return statsDoc.data();
+                }
+                
+                return {
+                    total: 0,
+                    won: 0,
+                    lost: 0,
+                    accuracy: 0,
+                    profit: 0,
+                    analyzedMatches: 10342
+                };
+                
+            } catch (error) {
+                console.error('Ошибка загрузки статистики:', error);
+                return null;
+            }
+        }
+
+        // ========== ФУНКЦИИ ДЛЯ РАБОТЫ СО СТАТИСТИКОЙ ==========
+        
+        function updateStats(stats) {
+            if (stats) {
+                appState.totalPredictions = stats.total || 0;
+                appState.wonPredictions = stats.won || 0;
+                appState.lostPredictions = stats.lost || 0;
+                appState.accuracy = stats.accuracy || 0;
+                appState.profit = stats.profit || 0;
+                
+                document.getElementById('analyzedMatches').textContent = stats.analyzedMatches || 10342;
+            }
+            
+            // Обновляем UI
+            document.getElementById('todayPredictions').textContent = appState.totalPredictions;
+            document.getElementById('wonPredictions').textContent = appState.wonPredictions;
+            document.getElementById('accuracyRate').innerHTML = appState.accuracy + '<span class="stat-percent">%</span>';
+            document.getElementById('profit').innerHTML = (appState.profit > 0 ? '+' : '') + appState.profit + '<span class="stat-percent">%</span>';
+            
+            document.getElementById('heroTotal').textContent = appState.totalPredictions;
+            document.getElementById('heroAccuracy').textContent = appState.accuracy + '%';
+            document.getElementById('heroIron').textContent = appState.ironPredictions;
+            document.getElementById('predictionsCount').textContent = appState.totalPredictions + ' прогнозов';
+            
+            // Обновляем прогресс-бары
+            document.getElementById('todayProgress').style.width = Math.min(100, (appState.totalPredictions / 20) * 100) + '%';
+            document.getElementById('accuracyProgress').style.width = appState.accuracy + '%';
+            document.getElementById('wonProgress').style.width = (appState.wonPredictions / Math.max(1, appState.totalPredictions)) * 100 + '%';
+            document.getElementById('profitProgress').style.width = Math.max(0, appState.profit + 50) + '%';
+            
+            // Обновляем тренды (для демо)
+            document.getElementById('todayTrend').textContent = '+' + Math.floor(Math.random() * 20) + '%';
+            document.getElementById('accuracyTrend').textContent = (appState.accuracy > 0 ? '+' : '') + Math.floor(appState.accuracy / 10) + '%';
+            document.getElementById('wonTrend').textContent = '+' + Math.floor(Math.random() * 10);
+            
+            const profitTrend = document.getElementById('profitTrend');
+            profitTrend.textContent = (appState.profit > 0 ? '+' : '') + appState.profit + '%';
+            profitTrend.className = appState.profit >= 0 ? 'stat-trend' : 'stat-trend down';
+            
+            // Обновляем время
+            const now = new Date();
+            document.getElementById('updateTime').textContent = `Обновлено: ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+        }
+
+        // ========== ФУНКЦИИ ОТОБРАЖЕНИЯ ==========
+        
+        function renderIronPredictions() {
+            const container = document.getElementById('ironPredictions');
+            if (!container) return;
+            
+            const ironPredictions = appState.predictions.filter(p => p.isIron);
+            
+            if (ironPredictions.length === 0) {
+                container.innerHTML = `
+                    <div class="iron-card" style="grid-column: 1/-1; text-align: center;">
+                        <i class="fas fa-search" style="font-size: 2rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                        <h3>Сегодня нет железных прогнозов</h3>
+                        <p style="color: var(--text-secondary);">Нейросеть продолжает анализ...</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            ironPredictions.slice(0, 2).forEach(pred => {
+                const card = document.createElement('div');
+                card.className = 'iron-card';
+                
+                const winnerText = pred.winner === 0 ? 'Ничья' :
+                                 pred.winner === 1 ? pred.team1 : pred.team2;
+                
+                const sportEmoji = pred.sport === 'football' ? '⚽' :
+                                 pred.sport === 'hockey' ? '🏒' : '🎮';
+                
+                card.innerHTML = `
+                    <span class="iron-badge">🔒 ЖЕЛЕЗНЫЙ ПРОГНОЗ</span>
+                    <div class="iron-teams">${pred.team1} — ${pred.team2}</div>
+                    <div class="iron-league">${sportEmoji} ${pred.league}</div>
+                    
+                    <div class="iron-main">
+                        <span class="iron-prediction">Победит: ${winnerText}</span>
+                        <span class="iron-probability">${pred.probability}%</span>
+                    </div>
+                    
+                    <div class="iron-description">
+                        <i class="fas fa-robot" style="color: var(--success); margin-right: 0.5rem;"></i>
+                        ${pred.description}
+                    </div>
+                    
+                    <div class="iron-footer">
+                        <span><i class="far fa-clock"></i> ${pred.date}, ${pred.time}</span>
+                        <span><i class="fas fa-chart-bar"></i> ${pred.factors?.length || 0} фактора</span>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        function renderPredictions() {
+            const grid = document.getElementById('predictionsGrid');
+            if (!grid) return;
+            
+            let filtered = appState.predictions;
+            if (currentSportFilter !== 'all') {
+                filtered = filtered.filter(p => p.sport === currentSportFilter);
+            }
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="prediction-card" style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                        <i class="fas fa-robot" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                        <h3>Нет прогнозов</h3>
+                        <p style="color: var(--text-secondary);">Нейросеть анализирует матчи...</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = '';
+            
+            filtered.forEach(pred => {
+                const card = document.createElement('div');
+                card.className = `prediction-card ${pred.isIron ? 'iron' : ''}`;
+                
+                const winnerText = pred.winner === 0 ? 'Ничья' :
+                                 pred.winner === 1 ? pred.team1 : pred.team2;
+                
+                const sportEmoji = pred.sport === 'football' ? '⚽' :
+                                 pred.sport === 'hockey' ? '🏒' : '🎮';
+                
+                let statusBadge = '';
+                if (pred.status === 'win') {
+                    statusBadge = '<span class="result-badge win">✓ Зашел</span>';
+                } else if (pred.status === 'loss') {
+                    statusBadge = '<span class="result-badge loss">✗ Не зашел</span>';
+                }
+                
+                const factors = pred.factors || ['Форма', 'Статистика'];
+                
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="sport-badge">${sportEmoji} ${pred.league}</span>
+                        <span class="match-time"><i class="far fa-clock"></i> ${pred.time}</span>
+                    </div>
+                    
+                    <div class="teams">
+                        ${pred.team1} — ${pred.team2}
+                        ${statusBadge}
+                    </div>
+                    
+                    <div class="prediction-block">
+                        <div class="winner">Победит: ${winnerText}</div>
+                        <div class="probability">${pred.probability}%</div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: ${pred.probability}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="description">
+                        <i class="fas fa-robot" style="color: var(--primary); margin-right: 0.5rem;"></i>
+                        ${pred.description}
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="factors">
+                            ${factors.map(f => `<span class="factor">${f}</span>`).join('')}
+                        </div>
+                        <span><i class="fas fa-calendar"></i> ${pred.date}</span>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        function renderNews() {
+            const feed = document.getElementById('newsFeed');
+            if (!feed) return;
+            
+            let filtered = appState.news;
+            if (currentNewsFilter !== 'all') {
+                filtered = filtered.filter(n => n.sport === currentNewsFilter);
+            }
+            
+            if (filtered.length === 0) {
+                feed.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        <i class="fas fa-newspaper" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>Нет новостей</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            feed.innerHTML = '';
+            
+            filtered.forEach(news => {
+                const item = document.createElement('div');
+                item.className = 'news-item';
+                item.innerHTML = `
+                    <div class="news-icon">${news.icon || '📰'}</div>
+                    <div class="news-content">
+                        <div class="news-title">${news.title}</div>
+                        <div class="news-meta">
+                            <span class="news-source"><i class="fas fa-newspaper"></i> ${news.source}</span>
+                            <span class="news-time"><i class="far fa-clock"></i> ${news.time}</span>
+                        </div>
+                    </div>
+                `;
+                feed.appendChild(item);
+            });
+        }
+
+        // ========== ФИЛЬТРАЦИЯ ==========
+        
+        function filterBySport(sport) {
+            currentSportFilter = sport;
+            
+            // Перезагружаем прогнозы из appState (они уже загружены из Firebase)
+            renderPredictions();
+            
+            // Обновляем активную кнопку
+            document.querySelectorAll('.sport-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.sport === sport);
+            });
+        }
+
+        // ========== ИНИЦИАЛИЗАЦИЯ ==========
+        
+        async function init() {
+            try {
+                // Проверяем наличие Firebase конфига
+                if (typeof firebaseConfig === 'undefined') {
+                    console.error('Firebase config not found! Please create config/firebase-config.js');
+                    return;
+                }
+                
+                // Инициализируем Firebase
+                firebase.initializeApp(firebaseConfig);
+                window.db = firebase.firestore();
+                
+                console.log('Firebase initialized successfully');
+                
+                // Загружаем данные
+                const [predictions, news, stats] = await Promise.all([
+                    loadPredictionsFromFirebase(),
+                    loadNewsFromFirebase(),
+                    loadStatsFromFirebase()
+                ]);
+                
+                appState.predictions = predictions;
+                appState.news = news;
+                appState.ironPredictions = predictions.filter(p => p.isIron).length;
+                
+                // Обновляем статистику
+                if (stats) {
+                    updateStats(stats);
+                }
+                
+                // Рендерим
+                renderIronPredictions();
+                renderPredictions();
+                renderNews();
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                
+                // Показываем ошибку на странице
+                document.getElementById('predictionsGrid').innerHTML = `
+                    <div class="prediction-card" style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--danger); margin-bottom: 1rem;"></i>
+                        <h3>Ошибка загрузки данных</h3>
+                        <p style="color: var(--text-secondary);">Пожалуйста, обновите страницу</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ========== ОБРАБОТЧИКИ СОБЫТИЙ ==========
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+            
+            // Фильтр по видам спорта
+            document.querySelectorAll('.sport-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const sport = btn.dataset.sport;
+                    filterBySport(sport);
+                });
+            });
+            
+            // Фильтр новостей
+            document.querySelectorAll('.news-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    document.querySelectorAll('.news-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    currentNewsFilter = tab.dataset.news;
+                    renderNews();
+                });
+            });
+            
+            // Форма подписки
+            document.getElementById('newsletterForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                alert('Спасибо за подписку! Вы будете получать прогнозы первыми.');
+                e.target.reset();
+            });
+            
+            // Обновляем данные каждые 5 минут
+            setInterval(async () => {
+                const [predictions, news, stats] = await Promise.all([
+                    loadPredictionsFromFirebase(),
+                    loadNewsFromFirebase(),
+                    loadStatsFromFirebase()
+                ]);
+                
+                appState.predictions = predictions;
+                appState.news = news;
+                appState.ironPredictions = predictions.filter(p => p.isIron).length;
+                
+                if (stats) {
+                    updateStats(stats);
+                }
+                
+                renderIronPredictions();
+                renderPredictions();
+                renderNews();
+                
+            }, 300000);
+        });
+    </script>
+</body>
+</html>
